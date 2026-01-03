@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Certificate Generator</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body { font-family: Arial, sans-serif; background:#f4f4f4; margin:0; }
+    .container { max-width: 900px; margin: 20px auto; padding: 20px; background:#fff; border-radius:8px; }
+    h1 { text-align:center; color:#6c63ff; }
+    label { display:block; margin-top:10px; font-weight:bold; }
+    input, textarea { width:100%; padding:8px; margin-top:5px; border:1px solid #ccc; border-radius:6px; }
+    button { margin-top:15px; padding:10px 15px; cursor:pointer; border:none; border-radius:6px; font-weight:bold; }
+    #previewBtn { background:#eef0ff; color:#2c2aa6; }
+    #generateBtn { background:#6c63ff; color:#fff; }
+    #printBtn { background:#ddd; }
+    #certificate {
+      margin-top:20px; padding:40px; border:5px double #333;
+      text-align:center; background:#fffef8;
+    }
+    #certificate h2 { margin:0; font-size:28px; color:#2c2aa6; }
+    #certificate h3 { margin:10px 0; font-size:22px; }
+    #certificate p { margin:10px 0; font-size:16px; }
+    .sigline { margin-top:30px; border-top:2px solid #999; display:inline-block; padding-top:6px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Certificate Generator</h1>
+
+    <label for="recipient">Name</label>
+    <input id="recipient" type="text" placeholder="Enter recipient name">
+
+    <label for="content">Certificate Content</label>
+    <textarea id="content" placeholder="Enter certificate text"></textarea>
+
+    <label for="issuer">Issuer</label>
+    <input id="issuer" type="text" placeholder="Enter issuer name">
+
+    <label for="date">Date</label>
+    <input id="date" type="date">
+
+    <button id="previewBtn" type="button">Preview</button>
+    <button id="generateBtn" type="button">Generate & Download PDF</button>
+    <button id="printBtn" type="button">Print to PDF (Fallback)</button>
+
+    <!-- Certificate preview -->
+    <div id="certificate">
+      <h2 id="certTitle">Certificate of Achievement</h2>
+      <h3 id="certRecipient">Recipient Name</h3>
+      <p id="certContent">Certificate content goes here.</p>
+      <p id="certIssuer">Issued by: —</p>
+      <p id="certDate">Date: —</p>
+      <div class="sigline" id="certSign">Authorized Signature</div>
+    </div>
+  </div>
+
+  <!-- Libraries -->
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+
+  <script>
+    function syncPreview() {
+      const name = document.getElementById('recipient').value || 'Recipient Name';
+      const text = document.getElementById('content').value || 'Certificate content goes here.';
+      const issuer = document.getElementById('issuer').value || '—';
+      const dateVal = document.getElementById('date').value;
+      const dateStr = dateVal ? new Date(dateVal).toLocaleDateString() : '—';
+
+      document.getElementById('certRecipient').textContent = name;
+      document.getElementById('certContent').textContent = text;
+      document.getElementById('certIssuer').textContent = 'Issued by: ' + issuer;
+      document.getElementById('certDate').textContent = 'Date: ' + dateStr;
+      document.getElementById('certSign').textContent = issuer ? issuer + ' — Authorized Signature' : 'Authorized Signature';
+    }
+
+    document.getElementById('previewBtn').addEventListener('click', syncPreview);
+    ['recipient','content','title','issuer','date'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.addEventListener('input', syncPreview);
+    });
+
+    document.getElementById('printBtn').addEventListener('click', () => {
+      syncPreview();
+      window.print();
+    });
+
+    document.getElementById('generateBtn').addEventListener('click', async () => {
+      syncPreview();
+      const certEl = document.getElementById('certificate');
+      const canvas = await html2canvas(certEl, { scale: 2 });
+      const imgData = canvas.toDataURL('image/png');
+
+      const { jsPDF } = window.jspdf;
+      const pdf = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' });
+
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const ratio = Math.min(pageWidth / canvas.width, pageHeight / canvas.height);
+
+      const renderWidth = canvas.width * ratio;
+      const renderHeight = canvas.height * ratio;
+      const x = (pageWidth - renderWidth) / 2;
+      const y = (pageHeight - renderHeight) / 2;
+
+      pdf.addImage(imgData, 'PNG', x, y, renderWidth, renderHeight);
+      const safeName = (document.getElementById('recipient').value || 'Certificate').replace(/[\\/:*?"<>|]+/g,'');
+      pdf.save(`${safeName} - Certificate.pdf`);
+    });
+
+    // Initialize date to today
+    (function initToday() {
+      const today = new Date();
+      const yyyy = today.getFullYear();
+      const mm = String(today.getMonth() + 1).padStart(2, '0');
+      const dd = String(today.getDate()).padStart(2, '0');
+      document.getElementById('date').value = `${yyyy}-${mm}-${dd}`;
+      syncPreview();
+    })();
+  </script>
+</body>
+</html>

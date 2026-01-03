@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Certificate Generator</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="light dark" />
+  <style>
+    :root {
+      --bg:#f5f7fb; --card:#ffffff; --ink:#111827; --muted:#6b7280; --accent:#16a34a;
+      --accent2:#0ea5e9; --line:#e5e7eb; --gold:#eab308;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--ink)}
+    .wrap{max-width:1200px;margin:24px auto;padding:16px}
+    header{display:flex;gap:12px;align-items:center;justify-content:space-between;margin-bottom:16px}
+    header h1{margin:0;font-size:22px;font-weight:800}
+    header .sub{color:var(--muted);font-size:13px}
+    .grid{display:grid;grid-template-columns:360px 1fr 320px;gap:16px}
+    @media (max-width:1100px){.grid{grid-template-columns:1fr}}
+    .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;box-shadow:0 10px 24px rgba(0,0,0,0.06)}
+    .card h2{margin:0 0 10px;font-size:18px}
+    .muted{color:var(--muted);font-size:13px}
+    label{display:block;font-weight:600;margin:12px 0 6px}
+    input[type="text"],input[type="date"],input[type="file"],select,textarea{width:100%;padding:10px 12px;border:1px solid #cbd5e1;border-radius:10px;font-size:14px;background:#fff}
+    textarea{resize:vertical;min-height:90px}
+    .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+    .btn{border:none;border-radius:10px;padding:11px 14px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:8px}
+    .primary{background:var(--accent);color:#fff}
+    .secondary{background:#eef6ff;color:#075985}
+    .soft{background:#f3f4f6;color:#111827}
+    .danger{background:#fee2e2;color:#b91c1c}
+    .ghost{background:transparent;border:1px dashed #cbd5e1}
+
+    /* Stage (A4 ratio) */
+    .stageToolbar{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+    .stage{position:relative;background:#ffffff;border:10px solid var(--line);border-radius:18px;width:100%;aspect-ratio:1/1.414;overflow:hidden}
+    .bgLayer{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+    /* Default theme (inspired by sample) */
+    .topBand{position:absolute;top:0;left:0;right:0;height:110px;background:linear-gradient(90deg,#0f766e,#16a34a 60%,#22c55e)}
+    .emblem{position:absolute;top:24px;left:50%;transform:translateX(-50%);width:96px;height:96px;border-radius:50%;border:5px solid var(--gold);display:grid;place-items:center;background:radial-gradient(circle,#14532d,#064e3b);color:#fef9c3;font-weight:900;text-shadow:0 2px 4px rgba(0,0,0,0.3)}
+    .emblem::after{content:"★";font-size:28px}
+    .defaultGradient{position:absolute;inset:0;background:linear-gradient(180deg,#f7fdf9 0%,#ffffff 60%);opacity:0.9;pointer-events:none}
+
+    /* Text layers */
+    .textLayer{position:absolute;min-width:140px;min-height:28px;padding:4px 8px;color:#0f172a;background:transparent;border:1px dashed transparent;border-radius:6px;user-select:none}
+    .textLayer .textContent{display:block;white-space:pre-wrap}
+    .textLayer.selected{border-color:#93c5fd;box-shadow:0 0 0 3px rgba(147,197,253,0.4)}
+    .textLayer .hint{position:absolute;top:-18px;left:0;font-size:11px;color:#334155;background:#e2e8f0;padding:2px 6px;border-radius:6px}
+    .resizeHandle{position:absolute;right:-6px;bottom:-6px;width:14px;height:14px;border-radius:50%;background:#0ea5e9;cursor:nwse-resize;box-shadow:0 2px 5px rgba(0,0,0,0.2)}
+    /* Signature columns */
+    .sigBlock{position:absolute;bottom:42px;width:28%;text-align:center}
+    .sigLine{margin-top:22px;border-top:2px solid #cbd5e1;padding-top:6px}
+    .sigLabel{font-size:13px;color:#475569}
+
+    /* Controls */
+    .layerControls{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px}
+    .layerControls input[type="color"]{width:36px;height:36px;padding:0}
+    .layerControls input[type="number"]{width:80px}
+
+    /* Assistant */
+    .assistant .tip{background:#f9fafb;border:1px solid var(--line);border-radius:10px;padding:8px;margin-bottom:8px}
+    .assistant .tip b{font-weight:700}
+
+    .status{margin-top:8px;color:var(--muted);font-size:12px}
+
+    @media (prefers-color-scheme: dark){
+      :root{--bg:#0b1220;--card:#0f172a;--ink:#e5e7eb;--muted:#94a3b8;--line:#1f2937}
+      .stage{border-color:#334155}
+      .defaultGradient{background:linear-gradient(180deg,#06151a 0%,#0b1a21 60%)}
+      .assistant .tip{background:#0b1730;border-color:#1f2a44}
+    }
+
+    @media print{
+      header,.grid>.card:first-child,.grid>.card:last-child{display:none}
+      .stage{border-width:0}
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div>
+        <h1>Certificate Generator</h1>
+        <div class="sub">Default template + custom layouts. Inline editing, receiver signature column, and PDF export.</div>
+      </div>
+      <div class="actions">
+        <button class="btn soft" id="printBtn" type="button">Print to PDF</button>
+        <button class="btn primary" id="generateBtn" type="button">Download PDF</button>
+      </div>
+    </header>
+
+    <section class="grid">
+      <!-- Left: Inputs -->
+      <div class="card">
+        <h2>Certificate details</h2>
+        <p class="muted">Fill these to auto‑populate. You can also click text on the certificate to edit directly.</p>
+
+        <label for="title">Certificate title</label>
+        <input id="title" type="text" value="CERTIFICATE OF APPRECIATION" />
+
+        <label for="recipient">Recipient name</label>
+        <input id="recipient" type="text" placeholder="Your Name" />
+
+        <label for="mainText">Main content</label>
+        <textarea id="mainText" placeholder="Your Content for award"></textarea>
+
+        <label for="date">Date</label>
+        <input id="date" type="date" />
+
+        <label for="issuer">Issuer name</label>
+        <input id="issuer" type="text" placeholder="Name of Awarder" />
+
+        <label for="roleLeft">Issuer role</label>
+        <input id="roleLeft" type="text" placeholder="Head" />
+
+        <label for="receiverRole">Receiver role</label>
+        <input id="receiverRole" type="text" placeholder="Award receiver" />
+
+        <label for="receiverSignatureName">Receiver signature name</label>
+        <input id="receiverSignatureName" type="text" placeholder="Receiver Name for Signature" />
+
+        <div class="actions">
+          <button class="btn secondary" id="syncBtn" type="button">Sync to default template</button>
+          <button class="btn ghost" id="resetBtn" type="button">Reset defaults</button>
+        </div>
+
+        <div class="status" id="status">Ready.</div>
+
+        <hr style="margin:16px 0;border:none;border-top:1px solid var(--line)" />
+
+        <h2>Custom layout</h2>
+        <p class="muted">Upload a background image. Add text layers and position them by dragging; resize via the handle.</p>
+
+        <label for="bgUpload">Background image</label>
+        <input id="bgUpload" type="file" accept="image/*" />
+
+        <div class="actions">
+          <button class="btn soft" id="addTextBtn" type="button">Add text layer</button>
+          <button class="btn danger" id="deleteLayerBtn" type="button">Delete selected layer</button>
+        </div>
+
+        <div class="layerControls" aria-label="Text styling controls">
+          <label class="muted">Selected layer style:</label>
+          <input id="fontSize" type="number" min="10" max="80" step="1" value="22" title="Font size (px)" />
+          <select id="fontWeight" title="Font weight">
+            <option value="400">Regular</option>
+            <option value="600" selected>Semibold</option>
+            <option value="700">Bold</option>
+          </select>
+          <select id="textAlign" title="Text align">
+            <option value="left">Left</option>
+            <option value="center" selected>Center</option>
+            <option value="right">Right</option>
+          </select>
+          <input id="textColor" type="color" value="#0f172a" title="Text color" />
+          <button class="btn soft" id="toggleEditBtn" type="button">Toggle edit/drag</button>
+        </div>
+      </div>
+
+      <!-- Middle: Stage -->
+      <div class="card">
+        <h2>Live certificate preview</h2>
+        <div class="stageToolbar">
+          <button class="btn soft" id="useDefaultBtn" type="button">Use default template</button>
+          <button class="btn soft" id="useCustomBtn" type="button">Use custom layout</button>
+        </div>
+
+        <div class="stage" id="stage" aria-label="Certificate area">
+          <div class="defaultGradient" id="defaultGradient"></div>
+          <div class="topBand" id="topBand"></div>
+          <div class="emblem" id="emblem" title="Emblem"></div>
+          <img id="bgImage" class="bgLayer" alt="Custom background" style="display:none" />
+
+          <!-- Default text layers -->
+          <div class="textLayer" id="layerTitle" style="left:50%;top:160px;width:70%;transform:translateX(-50%);text-align:center">
+            <span class="hint">Title</span>
+            <span class="textContent" contenteditable="true">CERTIFICATE OF APPRECIATION</span>
+            <div class="resizeHandle"></div>
+          </div>
+
+          <div class="textLayer" id="layerSubtitle" style="left:50%;top:220px;width:70%;transform:translateX(-50%);text-align:center">
+            <span class="hint">Subtitle</span>
+            <span class="textContent" contenteditable="true">Proudly presented to:</span>
+            <div class="resizeHandle"></div>
+          </div>
+
+          <div class="textLayer" id="layerName" style="left:50%;top:270px;width:60%;transform:translateX(-50%);text-align:center;font-weight:800;font-size:28px">
+            <span class="hint">Recipient</span>
+            <span class="textContent" contenteditable="true">Your Name</span>
+            <div class="resizeHandle"></div>
+          </div>
+
+          <div class="textLayer" id="layerContent" style="left:50%;top:330px;width:70%;transform:translateX(-50%);text-align:center;font-size:16px">
+            <span class="hint">Main content</span>
+            <span class="textContent" contenteditable="true">Your Content for award</span>
+            <div class="resizeHandle"></div>
+          </div>
+
+          <div class="textLayer" id="layerDate" style="left:50%;top:410px;width:40%;transform:translateX(-50%);text-align:center">
+            <span class="hint">Date</span>
+            <span class="textContent" contenteditable="true">Date</span>
+            <div class="resizeHandle"></div>
+          </div>
+
+          <!-- Signature columns -->
+          <div class="sigBlock" id="sigLeft" style="left:18%">
+            <div class="textLayer" id="layerIssuerName" style="left:0;right:0;margin:0 auto;top:auto;bottom:90px;width:100%;text-align:center">
+              <span class="hint">Issuer name</span>
+              <span class="textContent" contenteditable="true">Tushar Malpani</span>
+              <div class="resizeHandle"></div>
+            </div>
+            <div class="textLayer" id="layerIssuerRole" style="left:0;right:0;margin:0 auto;top:auto;bottom:52px;width:100%;text-align:center;font-size:14px;color:#475569">
+              <span class="hint">Issuer role</span>
+              <span class="textContent" contenteditable="true">Head</span>
+              <div class="resizeHandle"></div>
+            </div>
+            <div class="sigLine"></div>
+            <div class="sigLabel">Signature (Issuer)</div>
+          </div>
+
+          <div class="sigBlock" id="sigRight" style="left:54%">
+            <div class="textLayer" id="layerReceiverSignName" style="left:0;right:0;margin:0 auto;top:auto;bottom:90px;width:100%;text-align:center">
+              <span class="hint">Receiver signature name</span>
+              <span class="textContent" contenteditable="true">Receiver Name</span>
+              <div class="resizeHandle"></div>
+            </div>
+            <div class="textLayer" id="layerReceiverRole" style="left:0;right:0;margin:0 auto;top:auto;bottom:52px;width:100%;text-align:center;font-size:14px;color:#475569">
+              <span class="hint">Receiver role</span>
+              <span class="textContent" contenteditable="true">Award receiver</span>
+              <div class="resizeHandle"></div>
+            </div>
+            <div class="sigLine"></div>
+            <div class="sigLabel">Signature (Receiver)</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: AI Assistant -->
+      <div class="card assistant">
+        <h2>AI assistant</h2>
+        <p class="muted">Get wording suggestions, titles, and layout tips. It adapts to what you enter.</p>
+
+        <label for="aiGoal">Describe the award or occasion</label>
+        <textarea id="aiGoal" placeholder="e.g., Recognizing exceptional service to the community"></textarea>
+
+        <div class="actions">
+          <button class="btn primary" id="aiSuggestBtn" type="button">Suggest wording</button>
+          <button class="btn soft" id="aiTitleBtn" type="button">Suggest titles</button>
+          <button class="btn soft" id="aiLayoutBtn" type="button">Layout tips</button>
+        </div>
+
+        <div class="tip" id="aiOutput"><b>Tips will appear here.</b> Enter your occasion and click a button.</div>
+        <div class="tip"><b>Quick help:</b> Click any text on the certificate to edit. Use “Toggle edit/drag” to move text blocks on a custom layout.</div>
+      </div>
+    </section>
+
+    <div class="status" id="libStatus">Loading libraries…</div>
+  </div>
+
+  <!-- Libraries -->
+  <script defer src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"
+    onload="document.getElementById('libStatus').textContent='html2canvas loaded.'"
+    onerror="document.getElementById('libStatus').textContent='html2canvas failed — use Print to PDF.'"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"
+    onload="document.getElementById('libStatus').textContent+=' jsPDF loaded.'"
+    onerror="document.getElementById('libStatus').textContent+=' jsPDF failed — use Print to PDF.'"></script>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const $ = id => document.getElementById(id);
+      const stage = $('stage'), bgImage = $('bgImage'), topBand = $('topBand'), emblem = $('emblem'), defaultGradient = $('defaultGradient');
+
+      // State
+      let selectedLayer = null;
+      let dragging = false, resizing = false;
+      let dragOffsetX = 0, dragOffsetY = 0;
+      let startW = 0, startH = 0, startX = 0, startY = 0;
+
+      // Helper: clamp element fully inside the stage
+      function clamp(el){
+        const s = stage.getBoundingClientRect();
+        const b = el.getBoundingClientRect();
+        const left = Math.max(0, Math.min(b.left - s.left, s.width - b.width));
+        const top = Math.max(0, Math.min(b.top - s.top, s.height - b.height));
+        el.style.left = left + 'px';
+        el.style.top = top + 'px';
+      }
+      function selectLayer(el){
+        document.querySelectorAll('.textLayer').forEach(n => n.classList.remove('selected'));
+        selectedLayer = el || null;
+        if (selectedLayer) selectedLayer.classList.add('selected');
+        // Sync controls to selected
+        if (selectedLayer){
+          const content = selectedLayer.querySelector('.textContent');
+          $('fontSize').value = parseInt(getComputedStyle(content).fontSize) || 22;
+          $('fontWeight').value = getComputedStyle(content).fontWeight || '600';
+          $('textAlign').value = getComputedStyle(selectedLayer).textAlign || 'center';
+          $('textColor').value = rgbToHex(getComputedStyle(content).color);
+        }
+      }
+      function rgbToHex(rgb){
+        const m = rgb.match(/\d+/g);
+        if(!m) return '#0f172a';
+        return '#' + m.slice(0,3).map(x => ('0' + parseInt(x).toString(16)).slice(-2)).join('');
+      }
+
+      // Toggle edit/drag
+      $('toggleEditBtn').addEventListener('click', () => {
+        if (!selectedLayer) return;
+        const content = selectedLayer.querySelector('.textContent');
+        const isEditable = content.getAttribute('contenteditable') === 'true';
+        content.setAttribute('contenteditable', isEditable ? 'false' : 'true');
+        selectedLayer.style.cursor = isEditable ? 'move' : 'text';
+      });
+
+      // Style controls
+      $('fontSize').addEventListener('input', () => { if (selectedLayer) selectedLayer.querySelector('.textContent').style.fontSize = $('fontSize').value + 'px'; });
+      $('fontWeight').addEventListener('change', () => { if (selectedLayer) selectedLayer.querySelector('.textContent').style.fontWeight = $('fontWeight').value; });
+      $('textAlign').addEventListener('change', () => { if (selectedLayer) selectedLayer.style.textAlign = $('textAlign').value; });
+      $('textColor').addEventListener('input', () => { if (selectedLayer) selectedLayer.querySelector('.textContent').style.color = $('textColor').value; });
+
+      // Add/delete layers (custom)
+      $('addTextBtn').addEventListener('click', () => {
+        const layer = document.createElement('div');
+        layer.className = 'textLayer';
+        layer.style.left = '50%'; layer.style.top = '50%'; layer.style.transform = 'translate(-50%, -50%)';
+        layer.style.width = '40%'; layer.style.textAlign = 'center';
+        layer.innerHTML = '<span class="hint">Text</span><span class="textContent" contenteditable="true">New text</span><div class="resizeHandle"></div>';
+        stage.appendChild(layer);
+        selectLayer(layer);
+      });
+      $('deleteLayerBtn').addEventListener('click', () => {
+        if (selectedLayer && confirm('Delete selected text layer?')) { selectedLayer.remove(); selectedLayer = null; }
+      });
+
+      // Drag/resize
+      stage.addEventListener('mousedown', (e) => {
+        const tl = e.target.closest('.textLayer');
+        if (!tl) return;
+        selectLayer(tl);
+        const isHandle = e.target.classList.contains('resizeHandle');
+        const rect = tl.getBoundingClientRect();
+        const sRect = stage.getBoundingClientRect();
+
+        startX = e.clientX; startY = e.clientY;
+        startW = rect.width; startH = rect.height;
+        dragOffsetX = e.clientX - rect.left;
+        dragOffsetY = e.clientY - rect.top;
+
+        if (isHandle){
+          resizing = true;
+        } else {
+          const content = tl.querySelector('.textContent');
+          const isEditable = content.getAttribute('contenteditable') === 'true';
+          if (!isEditable){
+            dragging = true;
+            tl.style.transform = 'none';
+          }
+        }
+        e.preventDefault();
+      });
+      document.addEventListener('mousemove', (e) => {
+        if (!selectedLayer) return;
+        const sRect = stage.getBoundingClientRect();
+        if (dragging){
+          const left = e.clientX - sRect.left - dragOffsetX;
+          const top = e.clientY - sRect.top - dragOffsetY;
+          selectedLayer.style.left = left + 'px';
+          selectedLayer.style.top = top + 'px';
+          clamp(selectedLayer);
+        } else if (resizing){
+          const dx = e.clientX - startX, dy = e.clientY - startY;
+          selectedLayer.style.width = (startW + dx) + 'px';
+          selectedLayer.style.height = (startH + dy) + 'px';
+        }
+      });
+      document.addEventListener('mouseup', () => { dragging = false; resizing = false; });
+
+      // Mode switching: default vs custom
+      $('useDefaultBtn').addEventListener('click', () => {
+        defaultGradient.style.display = 'block';
+        topBand.style.display = 'block';
+        emblem.style.display = 'grid';
+        if (bgImage) bgImage.style.display = 'none';
+        $('status').textContent = 'Default template active.';
+      });
+      $('useCustomBtn').addEventListener('click', () => {
+        defaultGradient.style.display = 'none';
+        topBand.style.display = 'none';
+        emblem.style.display = 'none';
+        if (bgImage.src) bgImage.style.display = 'block';
+        $('status').textContent = 'Custom layout active.';
+      });
+
+      // Upload custom background
+      $('bgUpload').addEventListener('change', (e) => {
+        const file = e.target.files && e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+          bgImage.src = reader.result;
+          bgImage.style.display = 'block';
+          defaultGradient.style.display = 'none';
+          topBand.style.display = 'none';
+          emblem.style.display = 'none';
+          $('status').textContent = 'Background set. Drag text layers into position.';
+        };
+        reader.readAsDataURL(file);
+      });
+
+      // Sync inputs to default template
+      function syncDefault(){
+        const title = $('title').value.trim() || 'CERTIFICATE OF APPRECIATION';
+        const name = $('recipient').value.trim() || 'Your Name';
+        const content = $('mainText').value.trim() || 'Your Content for award';
+        const dateVal = $('date').value;
+        const dateStr = dateVal ? new Date(dateVal).toLocaleDateString(undefined,{day:'2-digit',month:'short',year:'numeric'}) : 'Date';
+        const issuer = $('issuer').value.trim() || 'Name of Awarder';
+        const roleLeft = $('roleLeft').value.trim() || 'Head';
+        const receiverRole = $('receiverRole').value.trim() || 'Award receiver';
+        const receiverSignName = $('receiverSignatureName').value.trim() || 'Receiver Name';
+
+        $('layerTitle').querySelector('.textContent').textContent = title;
+        $('layerName').querySelector('.textContent').textContent = name;
+        $('layerContent').querySelector('.textContent').textContent = content;
+        $('layerDate').querySelector('.textContent').textContent = dateStr;
+        $('layerIssuerName').querySelector('.textContent').textContent = 'Tushar Malpani';
+        $('layerIssuerRole').querySelector('.textContent').textContent = roleLeft;
+        $('layerReceiverRole').querySelector('.textContent').textContent = receiverRole;
+        $('layerReceiverSignName').querySelector('.textContent').textContent = receiverSignName;
+        // Right column top name is issuer name (awardee signature column uses Receiver name)
+        // The issuer name on right column is controlled via 'issuer'
+        // For clarity: Place issuer name as title of right column? Keep issuer as part of content:
+        // If desired as signature on right, uncomment below:
+        // $('layerReceiverSignName').querySelector('.textContent').textContent = issuer;
+        // But we keep receiver name on right signature line per requirement.
+      }
+      $('syncBtn').addEventListener('click', syncDefault);
+      ['title','recipient','mainText','date','issuer','roleLeft','receiverRole','receiverSignatureName'].forEach(id => {
+        const el = $(id); if (el) el.addEventListener('input', syncDefault);
+      });
+
+      // Reset default positions and values
+      $('resetBtn').addEventListener('click', () => {
+        // Reset positions
+        $('layerTitle').style.cssText = "left:50%;top:160px;width:70%;transform:translateX(-50%);text-align:center";
+        $('layerSubtitle').style.cssText = "left:50%;top:220px;width:70%;transform:translateX(-50%);text-align:center";
+        $('layerName').style.cssText = "left:50%;top:270px;width:60%;transform:translateX(-50%);text-align:center;font-weight:800;font-size:28px";
+        $('layerContent').style.cssText = "left:50%;top:330px;width:70%;transform:translateX(-50%);text-align:center;font-size:16px";
+        $('layerDate').style.cssText = "left:50%;top:410px;width:40%;transform:translateX(-50%);text-align:center";
+        $('sigLeft').style.left = "18%";
+        $('sigRight').style.left = "54%";
+        // Reset text values
+        $('title').value = 'CERTIFICATE OF APPRECIATION';
+        $('recipient').value = 'Your Name';
+        $('mainText').value = 'Your Content for award';
+        $('issuer').value = 'Name of Awarder';
+        $('roleLeft').value = 'Head';
+        $('receiverRole').value = 'Award receiver';
+        $('receiverSignatureName').value = 'Receiver Name';
+        const t = new Date();
+        $('date').value = `${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,'0')}-${String(t.getDate()).padStart(2,'0')}`;
+        // Restore default theme
+        defaultGradient.style.display = 'block';
+        topBand.style.display = 'block';
+        emblem.style.display = 'grid';
+        bgImage.style.display = 'none';
+        syncDefault();
+        $('status').textContent = 'Defaults restored.';
+      });
+
+      // PDF generation (A4 portrait)
+      $('generateBtn').addEventListener('click', async () => {
+        $('status').textContent = 'Generating PDF…';
+        const hasH2C = typeof window.html2canvas === 'function';
+        const hasPDF = window.jspdf && typeof window.jspdf.jsPDF === 'function';
+        if (!hasH2C || !hasPDF){
+          $('status').textContent = 'Libraries missing. Opening print dialog.';
+          window.print();
+          return;
+        }
+        try{
+          const canvas = await window.html2canvas(stage,{scale:2,backgroundColor:'#ffffff',useCORS:true});
+          const imgData = canvas.toDataURL('image/png');
+          const { jsPDF } = window.jspdf;
+          const pdf = new jsPDF({orientation:'portrait',unit:'pt',format:'a4'});
+          const pageW = pdf.internal.pageSize.getWidth(), pageH = pdf.internal.pageSize.getHeight();
+          const ratio = Math.min(pageW/canvas.width, pageH/canvas.height);
+          const w = canvas.width*ratio, h = canvas.height*ratio;
+          const x = (pageW - w)/2, y = (pageH - h)/2;
+          pdf.addImage(imgData,'PNG',x,y,w,h);
+          const safeName = ( $('recipient').value.trim() || 'Certificate' ).replace(/[\\/:*?"<>|]+/g,'');
+          pdf.save(`${safeName} - Certificate.pdf`);
+          $('status').textContent = 'PDF downloaded.';
+        }catch(e){
+          $('status').textContent = 'Error generating PDF. Using Print to PDF.';
+          window.print();
+        }
+      });
+
+      // Print fallback
+      $('printBtn').addEventListener('click', () => window.print());
+
+      // AI assistant (local heuristics)
+      function wording(goal, name, issuer){
+        const g = goal || 'outstanding contribution and dedication';
+        const n = name || 'the recipient';
+        const i = issuer || 'our organization';
+        return `This certificate is awarded to ${n} for ${g}. We appreciate the remarkable impact and commitment demonstrated. — ${i}`;
+      }
+      function titles(goal){
+        const g = (goal||'').toLowerCase();
+        const list = ['Certificate of Appreciation','Outstanding Achievement','Award of Merit','Certificate of Excellence','Special Recognition'];
+        if(g.includes('service')) list.unshift('Distinguished Service Award');
+        if(g.includes('community')) list.unshift('Community Impact Award');
+        if(g.includes('innovation')) list.unshift('Innovation Excellence Award');
+        return list.slice(0,5);
+      }
+      function tips(){
+        return [
+          'Center the recipient name and make it the largest text.',
+          'Keep roles aligned at the bottom with clear signature lines.',
+          'Limit body text width to ~60–70% for readability.',
+          'Use at least 12px spacing between text blocks.',
+          'Ensure strong contrast with any background image.'
+        ];
+      }
+      $('aiSuggestBtn').addEventListener('click', () => {
+        const text = wording($('aiGoal').value.trim(), $('recipient').value.trim(), $('issuer').value.trim());
+        $('aiOutput').innerHTML = `<b>Suggested wording:</b><br>${text}`;
+        $('layerContent').querySelector('.textContent').textContent = text;
+      });
+      $('aiTitleBtn').addEventListener('click', () => {
+        const t = titles($('aiGoal').value.trim());
+        $('aiOutput').innerHTML = `<b>Suggested titles:</b><br>• ${t.join('<br>• ')}`;
+        $('layerTitle').querySelector('.textContent').textContent = t[0];
+      });
+      $('aiLayoutBtn').addEventListener('click', () => {
+        const t = tips();
+        $('aiOutput').innerHTML = `<b>Layout tips:</b><br>• ${t.join('<br>• ')}`;
+      });
+
+      // Initial setup
+      (function init(){
+        const d = new Date();
+        $('date').value = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+        syncDefault();
+        selectLayer($('layerName'));
+        $('libStatus').textContent = 'Ready.';
+        // Click to select any layer
+        stage.addEventListener('click', (e)=>{ const tl = e.target.closest('.textLayer'); if (tl) selectLayer(tl); });
+      })();
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AI Certificate Generator</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg: #0b0f19;
+      --card: #121829;
+      --accent: #6c8cff;
+      --accent-2: #00d4ff;
+      --text: #e6e8ee;
+      --muted: #a9b0c6;
+      --border: #2a3555;
+      --gold: #d4af37;
+    }
+    *{ box-sizing: border-box; }
+    body{
+      margin:0;
+      background: radial-gradient(1200px 600px at 20% 10%, #0e1424 0%, #0b0f19 40%, #070b14 100%);
+      color: var(--text);
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+      line-height: 1.5;
+    }
+    header{
+      padding: 48px 24px 24px;
+      text-align: center;
+    }
+    header h1{
+      font-size: 2rem;
+      margin: 0 0 8px;
+      font-weight: 700;
+      letter-spacing: 0.4px;
+    }
+    header p{
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+    .container{
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 24px;
+      display: grid;
+      grid-template-columns: 1fr 1.2fr;
+      gap: 24px;
+    }
+    .panel{
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.00));
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.03);
+    }
+    .panel h2{ margin: 0 0 16px; font-size: 1.25rem; }
+    .field{ margin-bottom: 14px; }
+    .field label{ display: block; font-size: 0.9rem; color: var(--muted); margin-bottom: 6px; }
+    input, select{
+      width: 100%;
+      padding: 12px 14px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: #0e1424;
+      color: var(--text);
+      outline: none;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+    input:focus, select:focus{
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(108,140,255,0.15);
+    }
+    .row{ display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .btns{ display:flex; gap:12px; margin-top: 14px; flex-wrap: wrap; }
+    .btn{
+      padding: 11px 14px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      color: var(--text);
+      background: linear-gradient(90deg, rgba(108,140,255,0.18), rgba(0,212,255,0.18));
+      cursor: pointer;
+      transition: transform 0.06s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+      font-weight: 600;
+    }
+    .btn.primary{ background: linear-gradient(90deg, #6c8cff, #00d4ff); border-color: transparent; color: #0b0f19; }
+    .btn:hover{ transform: translateY(-1px); box-shadow: 0 6px 18px rgba(0,0,0,0.25); }
+
+    /* Certificate layout */
+    .certificate-wrap{ display:flex; align-items:center; justify-content:center; }
+    .certificate{
+      width: 100%;
+      max-width: 780px;
+      aspect-ratio: 11 / 8.5;
+      background:
+        radial-gradient(800px 400px at 10% 0%, rgba(108,140,255,0.15) 0%, rgba(108,140,255,0) 60%),
+        radial-gradient(1000px 500px at 90% 100%, rgba(0,212,255,0.18) 0%, rgba(0,212,255,0) 60%),
+        #0d1322;
+      border-radius: 18px;
+      border: 2px solid rgba(212,175,55,0.35);
+      box-shadow: 0 25px 60px rgba(0,0,0,0.45);
+      position: relative;
+      padding: 28px;
+      overflow: hidden;
+    }
+    .certificate:before{ content:""; position:absolute; inset: 14px; border-radius: 14px; border: 1px dashed rgba(212,175,55,0.55); pointer-events:none; }
+    .badge{ position:absolute; top: 22px; right: 24px; background: linear-gradient(135deg, rgba(212,175,55,0.9), rgba(255,238,153,0.95)); color: #2d2a1f; padding: 8px 12px; border-radius: 999px; font-weight: 700; font-size: 0.85rem; box-shadow: 0 8px 18px rgba(212,175,55,0.35); border: 1px solid rgba(212,175,55,0.7); }
+    .crest{ width: 78px; height: 78px; border-radius: 50%; border: 2px solid rgba(212,175,55,0.6); display:flex; align-items:center; justify-content:center; background: radial-gradient(80px 80px at 50% 50%, rgba(255,255,255,0.12), rgba(255,255,255,0.02)); box-shadow: inset 0 0 24px rgba(212,175,55,0.18), 0 10px 20px rgba(0,0,0,0.35); }
+    .crest svg{ width: 44px; height: 44px; filter: drop-shadow(0 2px 2px rgba(0,0,0,0.35)); }
+    .title{ font-family: "Playfair Display", serif; font-size: 2rem; text-align: center; margin: 10px 0 4px; color: #f4f6fb; letter-spacing: 0.5px; }
+    .subtitle{ text-align: center; color: var(--muted); margin-bottom: 16px; font-size: 0.95rem; }
+    .line{ height: 1px; background: linear-gradient(90deg, rgba(212,175,55,0), rgba(212,175,55,0.7), rgba(212,175,55,0)); margin: 14px 0 18px; }
+    .name{ text-align: center; font-size: 1.8rem; font-weight: 700; letter-spacing: 0.6px; margin: 10px 0 2px; color: #ffffff; }
+    .domain{ text-align: center; font-size: 1.05rem; color: var(--muted); margin-bottom: 18px; }
+    .details{ display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; }
+    .detail{ border: 1px solid rgba(212,175,55,0.35); border-radius: 10px; padding: 10px 12px; background: rgba(255,255,255,0.03); }
+    .detail .label{ color: var(--muted); font-size: 0.8rem; }
+    .detail .value{ font-weight: 600; margin-top: 4px; }
+    .sign-row{ display: flex; justify-content: space-between; align-items: end; margin-top: 24px
+    .sig{ text-align: center; }
+    .sig .sig-line{ height: 1px; width: 200px; background: rgba(212,175,55,0.55); margin: 10px auto 6px; }
+    .sig .sig-label{ font-size: 0.78rem; color: var(--muted); }
+    .ribbon{ position: absolute; left: -24px; top: 50%; transform: translateY(-50%) rotate(-8deg); background: linear-gradient(180deg, #6c8cff, #00d4ff); color: #0b0f19; padding: 8px 18px; border-radius: 8px; font-weight: 700; box-shadow: 0 18px 35px rgba(0,212,255,0.25); border: 1px solid rgba(255,255,255,0.35); }
+    footer{ text-align:center; padding: 24px; color: var(--muted); font-size: 0.9rem; }
+    .note{ font-size: 0.85rem; color: var(--muted); margin-top: 8px; }
+    @media (max-width: 900px){ .container{ grid-template-columns: 1fr; } .certificate{ max-width: 100%; } }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>AI Certificate Generator</h1>
+    <p>Create a sleek certificate for AI topic domains. Free preview and PDF download.</p>
+  </header>
+
+  <div class="container">
+    <!-- Controls -->
+    <div class="panel">
+      <h2>Enter details</h2>
+      <div class="field"><label for="name">Recipient name</label><input id="name" type="text" placeholder="e.g., Priya Shah" /></div>
+      <div class="field"><label for="domain">AI domain</label>
+        <select id="domain">
+          <option>Machine Learning</option>
+          <option>Deep Learning</option>
+          <option>Natural Language Processing</option>
+          <option>Computer Vision</option>
+          <option>Generative AI</option>
+          <option>Reinforcement Learning</option>
+          <option>Data Engineering for AI</option>
+          <option>AI Ethics & Safety</option>
+        </select>
+      </div>
+      <div class="row">
+        <div class="field"><label for="issuer">Issuer / Organization</label><input id="issuer" type="text" placeholder="e.g., Surat AI Lab" /></div>
+        <div class="field"><label for="date">Issue date</label><input id="date" type="date" /></div>
+      </div>
+      <div class="row">
+        <div class="field"><label for="id">Certificate ID</label><input id="id" type="text" placeholder="e.g., SAL-2026-001" /></div>
+        <div class="field"><label for="level">Level</label>
+          <select id="level">
+            <option>Foundation</option>
+            <option>Intermediate</option>
+            <option>Advanced</option>
+            <option>Expert</option>
+          </select>
+        </div>
+      </div>
+      <div class="btns">
+        <button class="btn" id="previewBtn">Generate preview</button>
+        <button class="btn primary" id="pdfBtn">Download PDF</button>
+      </div>
+      <p class="note">Tip: Fill in fields and click “Generate preview”. Then export as PDF.</p>
+    </div>
+
+    <!-- Certificate preview -->
+    <div class="panel certificate-wrap">
+      <div class="certificate" id="certificate">
+        <div class="badge">Certified</div>
+        <div class="ribbon">AI DOMAIN</div>
+        <div style="display:flex; justify-content:center; gap:14px; align-items:center;">
+          <div class="crest" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="#2c344f">
+              <path d="M12 2l3 7h7l-5.5 4.5L18 21l-6-4-6 4 1.5-7.5L2 9h7l3-7z" fill="#1b2240"></path>
+              <path d="M12 6.5c-3.04 0-5.5 2.46-5.5 5.5s2.46 5.5 5.5 5.5 5.5-2.46 5.5-5.5-2.46-5.5-5.5-5.5zm0 2c1.93 0 3.5 1.57 3.5 3.5S13.93 16 12 16s-3.5-1.57-3.5-3.5S10.07 8.5 12 8.5z" fill="#6c8cff"></path>
+            </svg>
+          </div>
+          <div>
+            <div class="title">Certificate of Achievement</div>
+            <div class="subtitle">Awarded for demonstrated knowledge in the specified AI domain</div>
+          </div>
+        </div>
+        <div class="line"></div>
+        <div class="name" id="certName">Your Name</div>
+        <div class="domain" id="certDomain">Generative AI — Foundation Level</div>
+        <div class="details">
+          <div class="detail"><div class="label">Issuer</div><div class="value" id="certIssuer">Surat AI Lab</div></div>
+          <div class="detail"><div class="label">Date</div><div class="value" id="certDate">2026-01-02</div></div>
+          <div class="detail"><div class="label">Certificate ID</div><div class="value" id="certId">SAL-2026-001</div></div>
+          <div class="detail"><div class="label">Verified Level</div><div class="value" id="certLevel">Foundation</div></div>
+        </div>
+        <div class="sign-row">
+          <div class="sig"><div class="sig-line"></div><div class="sig-label">Director, AI Programs</div></div>
+          <div class="sig"><div class="sig-line"></div><div class="sig-label">Head of Certification</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer>Made with curiosity in Surat. Free to use and customize.</footer>
+
+  <!-- Libraries for export -->
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+
+  <script>
+    const dateInput = document.getElementById('date');
+    if(!dateInput.value){
+      const today = new Date();
+      const yyyy = today.getFullYear();
+      const mm = String(today.getMonth()+1).padStart(2, '0');
+      const dd = String(today.getDate()).padStart(2, '0');
+      dateInput.value = `${yyyy}-${mm}-${dd}`;
+    }
+    function updatePreview(){
+      const name = document.getElementById('name').value.trim() || 'Your Name';
+      const domain = document.getElementById('domain').value;
+      const issuer = document.getElementById('issuer').value.trim() || 'Surat AI Lab';
+      const date = document.getElementById('date').value || '2026-01-02';
+      const id = document.getElementById('id').value.trim() || 'SAL-2026-001';
+      const level = document.getElementById('level').value;
+      document.getElementById('certName').textContent = name;
+      document.getElementById('certDomain').textContent = `${domain} — ${level} Level`;
+      document.getElementById('certIssuer').textContent = issuer;
+      document.getElementById('certDate').textContent = date;
+      document.getElementById('certId').textContent = id;
+      document.getElementById('certLevel').textContent = level;
+      document.querySelector('.ribbon').textContent = domain.toUpperCase();
+    }
+    document.getElementById('previewBtn').addEventListener('click', updatePreview);
+    document.getElementById('pdfBtn').addEventListener('click', async () => {
+      updatePreview();
+      const cert = document.getElementById('certificate');
+      const canvas = await html2canvas(cert, { scale: 2, backgroundColor: null, useCORS: true });
+      const imgData = canvas.toDataURL('image/png');
+      const { jsPDF } = window.jspdf;
+      const pdf = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' });
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+
+      const margin = 24;
+      const availableWidth = pageWidth - margin * 2;
+      const availableHeight = pageHeight - margin * 2;
+
+      const imgWidth = canvas.width;
+      const imgHeight = canvas.height;
+      const ratio = Math.min(availableWidth / imgWidth, availableHeight / imgHeight);
+
+      const renderWidth = imgWidth * ratio;
+      const renderHeight = imgHeight * ratio;
+      const x = (pageWidth - renderWidth) / 2;
+      const y = (pageHeight - renderHeight) / 2;
+
+      pdf.addImage(imgData, 'PNG', x, y, renderWidth, renderHeight);
+
+      const name = document.getElementById('certName').textContent || 'certificate';
+      const domain = document.getElementById('domain').value || 'AI';
+      pdf.save(`${name.replace(/\s+/g,'_')}_${domain.replace(/\s+/g,'_')}_certificate.pdf`);
+    });
+  </script>
+</body>
+</html>

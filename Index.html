@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Certificate Generator</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body {
+      font-family: "Segoe UI", Arial, sans-serif;
+      background: #f9fafb;
+      margin: 0;
+      padding: 0;
+      color: #111827;
+    }
+    header {
+      text-align: center;
+      padding: 20px;
+      background: #2563eb;
+      color: white;
+    }
+    .container {
+      display: flex;
+      flex-wrap: wrap;
+      max-width: 1200px;
+      margin: 20px auto;
+      gap: 20px;
+    }
+    .form {
+      flex: 1 1 300px;
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+    .form label {
+      display: block;
+      margin-top: 12px;
+      font-weight: 600;
+    }
+    .form input, .form textarea {
+      width: 100%;
+      padding: 8px;
+      margin-top: 6px;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+    }
+    .form button {
+      margin-top: 16px;
+      padding: 10px 14px;
+      border: none;
+      border-radius: 6px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .btn-primary { background: #2563eb; color: white; }
+    .btn-secondary { background: #e5e7eb; }
+
+    .preview {
+      flex: 2 1 600px;
+      background: white;
+      padding: 40px;
+      border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      text-align: center;
+    }
+    .preview h1 { font-size: 28px; margin-bottom: 10px; }
+    .preview h2 { font-size: 22px; margin: 10px 0; }
+    .preview p { margin: 8px 0; }
+    .signatures {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 40px;
+    }
+    .sign {
+      width: 40%;
+      text-align: center;
+    }
+    .sign .line {
+      border-top: 1px solid #000;
+      margin-top: 40px;
+      padding-top: 6px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Certificate Generator by TM</h1>
+    <p>Create, preview, and download certificates instantly</p>
+  </header>
+
+  <div class="container">
+    <!-- Input form -->
+    <div class="form">
+      <label>Certificate Title</label>
+      <input id="title" type="text" value="Certificate of Appreciation">
+
+      <label>Recipient Name</label>
+      <input id="recipient" type="text" placeholder="Enter recipient name">
+
+      <label>Main Content</label>
+      <textarea id="content" placeholder="Reason for award"></textarea>
+
+      <label>Date</label>
+      <input id="date" type="date">
+
+      <label>Issuer Name</label>
+      <input id="issuer" type="text" placeholder="Issuer name">
+
+      <label>Issuer Role</label>
+      <input id="issuerRole" type="text" placeholder="Issuer role">
+
+      <label>Receiver Role</label>
+      <input id="receiverRole" type="text" placeholder="Receiver role">
+
+      <button class="btn-secondary" onclick="updatePreview()">Preview</button>
+      <button class="btn-primary" onclick="downloadPDF()">Download PDF</button>
+    </div>
+
+    <!-- Certificate preview -->
+    <div class="preview" id="certificate">
+      <h1 id="certTitle">Certificate of Appreciation</h1>
+      <p>Proudly presented to</p>
+      <h2 id="certRecipient">Recipient Name</h2>
+      <p id="certContent">Reason for award</p>
+      <p id="certDate">Date: —</p>
+
+      <div class="signatures">
+        <div class="sign">
+          <div id="certIssuer">Issuer Name</div>
+          <div id="certIssuerRole">Issuer Role</div>
+          <div class="line">Signature (Issuer)</div>
+        </div>
+        <div class="sign">
+          <div id="certReceiver">Recipient Name</div>
+          <div id="certReceiverRole">Receiver Role</div>
+          <div class="line">Signature (Receiver)</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Libraries -->
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+
+  <script>
+    function updatePreview() {
+      document.getElementById('certTitle').textContent = document.getElementById('title').value;
+      document.getElementById('certRecipient').textContent = document.getElementById('recipient').value || 'Recipient Name';
+      document.getElementById('certContent').textContent = document.getElementById('content').value || 'Reason for award';
+      const dateVal = document.getElementById('date').value;
+      document.getElementById('certDate').textContent = dateVal ? 'Date: ' + new Date(dateVal).toLocaleDateString() : 'Date: —';
+      document.getElementById('certIssuer').textContent = document.getElementById('issuer').value || 'Issuer Name';
+      document.getElementById('certIssuerRole').textContent = document.getElementById('issuerRole').value || 'Issuer Role';
+      document.getElementById('certReceiver').textContent = document.getElementById('recipient').value || 'Recipient Name';
+      document.getElementById('certReceiverRole').textContent = document.getElementById('receiverRole').value || 'Receiver Role';
+    }
+
+    async function downloadPDF() {
+      updatePreview();
+      const cert = document.getElementById('certificate');
+      const canvas = await html2canvas(cert, { scale: 2 });
+      const imgData = canvas.toDataURL('image/png');
+      const { jsPDF } = window.jspdf;
+      const pdf = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' });
+      const pageW = pdf.internal.pageSize.getWidth();
+      const pageH = pdf.internal.pageSize.getHeight();
+      const ratio = Math.min(pageW / canvas.width, pageH / canvas.height);
+      const w = canvas.width * ratio, h = canvas.height * ratio;
+      const x = (pageW - w) / 2, y = (pageH - h) / 2;
+      pdf.addImage(imgData, 'PNG', x, y, w, h);
+      const name = (document.getElementById('recipient').value || 'Certificate').replace(/[\\/:*?"<>|]+/g,'');
+      pdf.save(`${name} - Certificate.pdf`);
+    }
+
+    // Initialize with today's date
+    (function init() {
+      const today = new Date();
+      document.getElementById('date').value = today.toISOString().split('T')[0];
+      updatePreview();
+    })();
+  </script>
+</body>
+</html>
